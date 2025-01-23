@@ -6,16 +6,29 @@ use std::collections::HashMap;
 
 use dotenv::dotenv;
 
-use poise::{serenity_prelude as serenity, CreateReply};
+use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::*;
 
-// use serenity::all::standard::CommandResult;
-// use serenity::model::gateway::Ready;
-// use serenity::{async_trait, gateway};
-// use serenity::model::channel::Message;
 struct Data {}
+struct Bot;
+
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
+
+async fn event_handler(
+    ctx: &serenity::Context,
+    event: &serenity::FullEvent,
+    _framework: poise::FrameworkContext<'_, Data, Error>,
+    data: &Data,
+) -> Result<(), Error> {
+    match event {
+        serenity::FullEvent::Ready { data_about_bot, .. } => {
+            println!("Logged in as {}", data_about_bot.user.name);
+        }
+        _ => {}
+    }
+    Ok(())
+}
 
 #[poise::command(slash_command, prefix_command)]
 async fn ping(ctx: Context<'_>) -> Result<(), Error> {
@@ -26,10 +39,11 @@ async fn ping(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(slash_command, prefix_command)]
 async fn lyrics(
     ctx:Context<'_>,
-    #[description="User whose song to pick"] user: Option<serenity::User>
+    #[description="User who's song to pick"] user: Option<serenity::User>
 ) -> Result<(), Error> {
     let activities: HashMap<UserId, Presence> = ctx.guild().as_ref().unwrap().presences.clone();
-    let activity_data: Option<&Vec<Activity>> = activities.get(&ctx.author().id).map(|presence | &presence.activities);
+    let target_user: &User = user.as_ref().unwrap_or(ctx.author());
+    let activity_data: Option<&Vec<Activity>> = activities.get(&target_user.id).map(|presence | &presence.activities);
     let mut song_name:String = String::new();
     let mut artist_name:String = String::new(); 
 
@@ -47,7 +61,7 @@ async fn lyrics(
     }
 
 
-    let lyrics:String = lyrics::get_lyrics(&artist_name, &song_name).await;
+    let lyrics:String = lyrics::get_lyrics(&artist_name, &song_name).await.plainLyrics;
 
     println!("{}",lyrics);
 
@@ -67,7 +81,6 @@ async fn lyrics(
 async fn main() {
     dotenv().ok();
     let token = env::var("BOT_TOKEN").expect("Expected a token in the environment");
-    println!("{token}");    
 
     let intents: GatewayIntents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILDS | GatewayIntents::GUILD_MEMBERS | GatewayIntents::GUILD_PRESENCES;
 

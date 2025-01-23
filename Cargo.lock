@@ -2630,6 +2630,7 @@ dependencies = [
  "poise",
  "reqwest 0.12.12",
  "scraper",
+ "serde",
  "serenity",
  "slugify",
  "tokio",
