@@ -1,4 +1,5 @@
 
+
 use slugify::slugify;
 use scraper::Html;
 use scraper::Selector;
@@ -15,7 +16,7 @@ pub struct Lrclib {
     duration: f32,
     instrumental: bool,
     pub plainLyrics: String,
-    syncedLyrics: String
+    syncedLyrics: Option<String>
 }
 
 async fn get_lyrics_data(artist_name: &str, song_name: &str) -> Lrclib {

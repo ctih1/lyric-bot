@@ -2631,6 +2631,7 @@ dependencies = [
  "reqwest 0.12.12",
  "scraper",
  "serde",
+ "serde_json",
  "serenity",
  "slugify",
  "tokio",

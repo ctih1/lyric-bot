@@ -1,4 +1,5 @@
 mod lyrics;
+mod translation;
 #[macro_use]
 extern crate slugify;
 use std::env;
@@ -8,6 +9,7 @@ use dotenv::dotenv;
 
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::*;
+use ureq::rustls::unbuffered::TransmitTlsData;
 
 struct Data {}
 struct Bot;
@@ -39,7 +41,8 @@ async fn ping(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(slash_command, prefix_command)]
 async fn lyrics(
     ctx:Context<'_>,
-    #[description="User who's song to pick"] user: Option<serenity::User>
+    #[description="User who's song to pick"] user: Option<serenity::User>,
+    #[description="Enable translation"] translate: Option<bool>
 ) -> Result<(), Error> {
     let activities: HashMap<UserId, Presence> = ctx.guild().as_ref().unwrap().presences.clone();
     let target_user: &User = user.as_ref().unwrap_or(ctx.author());
@@ -61,9 +64,12 @@ async fn lyrics(
     }
 
 
-    let lyrics:String = lyrics::get_lyrics(&artist_name, &song_name).await.plainLyrics;
+    let mut lyrics:String = lyrics::get_lyrics(&artist_name, &song_name).await.plainLyrics;
+    
+    if translate.unwrap_or(false) {
+        lyrics = translation::translate(&lyrics).await.translations.first().unwrap().text.clone();
+    }
 
-    println!("{}",lyrics);
 
     let embed = CreateEmbed::new()
         .title(format!("Lyrics for {} by {}", song_name, artist_name))
@@ -81,7 +87,7 @@ async fn lyrics(
 async fn main() {
     dotenv().ok();
     let token = env::var("BOT_TOKEN").expect("Expected a token in the environment");
-
+    
     let intents: GatewayIntents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILDS | GatewayIntents::GUILD_MEMBERS | GatewayIntents::GUILD_PRESENCES;
 
     let framework = poise::Framework::builder()
