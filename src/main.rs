@@ -64,12 +64,20 @@ async fn lyrics(
     }
 
 
-    let mut lyrics:String = lyrics::get_lyrics(&artist_name, &song_name).await.plainLyrics;
+    let lyric_data:Result<lyrics::Lrclib, String> = lyrics::get_lyrics(&artist_name, &song_name).await;
+
+    if lyric_data.is_err() {
+        ctx.say(format!("Could not find lyrics for song {} by {}",song_name,artist_name)).await;
+        return Ok(())
+    }
+
+    let mut lyrics:String = lyric_data.unwrap().plainLyrics;
     
     if translate.unwrap_or(false) {
         lyrics = translation::translate(&lyrics).await.translations.first().unwrap().text.clone();
     }
 
+    lyrics = lyrics.replace("#",""); // some songs keep having a # in their lyrics, which causes discord to start seizing
 
     let embed = CreateEmbed::new()
         .title(format!("Lyrics for {} by {}", song_name, artist_name))

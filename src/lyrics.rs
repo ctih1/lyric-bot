@@ -19,22 +19,23 @@ pub struct Lrclib {
     syncedLyrics: Option<String>
 }
 
-async fn get_lyrics_data(artist_name: &str, song_name: &str) -> Lrclib {
-    let json: Result<Lrclib, reqwest::Error> = reqwest::get(
+pub async fn get_lyrics(artist_name: &str, song_name: &str) -> Result<Lrclib, String> {
+    let request:reqwest::Response  = reqwest::get(
         format!("https://lrclib.net/api/get?artist_name={}&track_name={}",slugify!(artist_name,separator="+"),slugify!(song_name,separator="+"))
     )
         .await
-        .unwrap()
-        .json::<Lrclib>()
-        .await;
+        .unwrap();
+    
+    if !request.status().is_success() {
+        return Err(request.status().to_string())
+    }
+
     println!("GET {}",format!("https://lrclib.net/api/get?artist_name={}&track_name={}",slugify!(artist_name,separator="+"),slugify!(song_name,separator="+")));
-    return json.unwrap();
+    return Ok(request.json::<Lrclib>().await.unwrap());
 }
 
 
-pub async fn get_lyrics(artist_name: &str, song_name: &str) -> Lrclib {
-    return get_lyrics_data(artist_name, song_name).await;
-}
+
 
 
 
